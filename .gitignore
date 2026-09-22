@@ -1,0 +1,35 @@
+# Gradle
+.gradle/
+/build/
+/app/build/
+
+# Local configuration
+local.properties
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+.kotlin/
+
+# Python Virtual Environment and caches (used for model building)
+/model-build/py311/
+/model-build/.pytest_cache/
+/model-build/__pycache__/
+*.pyc
+*.litertlm
+*.pt
+model-build/vosk-corrupt/
+
+# Android
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+*.log
+*.so
+
+# OS specific
+.DS_Store
+Thumbs.db

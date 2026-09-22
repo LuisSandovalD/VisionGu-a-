@@ -1,0 +1,3 @@
+-keep class org.vosk.** { *; }
+-keep class com.google.ai.edge.litertlm.** { *; }
+-keep class org.tensorflow.lite.** { *; }

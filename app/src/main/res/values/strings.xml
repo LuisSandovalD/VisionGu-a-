@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">VisionGuía</string>
+    <string name="accessibility_service_name">Control accesible de VisionGuía</string>
+    <string name="notification_service_name">Lector de notificaciones de VisionGuía</string>
+    <string name="accessibility_description">Permite usar teclas de volumen como acceso opcional y ejecutar acciones de accesibilidad solicitadas por la persona usuaria.</string>
+    <string name="start_listening">Escuchar</string>
+    <string name="stop_speech">Detener voz</string>
+    <string name="repeat">Repetir último mensaje</string>
+    <string name="status_idle">En espera</string>
+    <string name="status_listening">Escuchando</string>
+    <string name="status_processing">Procesando</string>
+    <string name="permissions_title">Permisos necesarios</string>
+    <string name="permission_explanation">Android necesita que confirmes estos permisos. La cámara y el micrófono solo se usan mientras activas sus funciones.</string>
+    <string name="safety_notice">VisionGuía es una tecnología de asistencia complementaria. No reemplaza un bastón blanco, perro guía ni entrenamiento profesional de orientación y movilidad. Las detecciones y distancias pueden contener errores.</string>
+</resources>
