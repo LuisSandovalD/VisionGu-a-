@@ -17,6 +17,7 @@ import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
+import com.visionguia.sensors.Esp32BleSource
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -33,6 +34,12 @@ object AppModule {
             .fallbackToDestructiveMigration()
             .build()
     @Provides fun dao(database: VisionGuiaDatabase): VisionGuiaDao = database.dao()
+
+    @Provides
+    @Singleton
+    fun esp32BleSource(
+        @ApplicationContext context: Context
+    ): Esp32BleSource = Esp32BleSource(context)
     @Provides @Singleton fun httpClient(): OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS).readTimeout(10, TimeUnit.MINUTES).build()
 }

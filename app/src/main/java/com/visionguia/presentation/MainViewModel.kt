@@ -36,6 +36,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
+import com.visionguia.sensors.Esp32BleSource
+import com.visionguia.core.model.SensorReading
 
 data class MainUiState(
     val state: AssistantState = AssistantState.IDLE,
@@ -52,6 +54,7 @@ class MainViewModel @Inject constructor(
     private val recognition: SpeechRecognitionEngine,
     private val vosk: VoskSpeechRecognitionEngine,
     private val speech: SpeechOrchestrator,
+    private val esp32Ble: Esp32BleSource,
     private val phone: PhoneControlManager,
     private val emergency: EmergencyManager,
     private val settings: SettingsRepository,
@@ -72,6 +75,12 @@ class MainViewModel @Inject constructor(
     private var requestedObject: String? = null
     private var lastSceneSignature = ""
     private var lastSceneAnnouncementAt = 0L
+
+    private var bleStarted = false
+
+    private var lastProximityLevel = 0
+
+    private var lastProximityAnnouncementAt = 0L
 
     init {
         val models = File(context.filesDir, "models").apply { mkdirs() }
@@ -99,6 +108,11 @@ class MainViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            esp32Ble.readings.collectLatest { reading ->
+                handleSensorReading(reading)
+            }
+        }
+        viewModelScope.launch {
             settings.settings.collectLatest { if (!it.onboardingComplete) {
                 respond("Bienvenida a VisionGuía. Toca dos veces la pantalla para hablar. Mantén pulsado para repetir. Android necesita que confirmes los permisos. La cámara y el audio se procesan en tu teléfono. VisionGuía complementa, no reemplaza, tu bastón blanco, perro guía o entrenamiento de movilidad.")
                 settings.completeOnboarding()
@@ -106,6 +120,72 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun onBluetoothPermissionChanged(granted: Boolean) {
+        if (!granted) {
+            if (bleStarted) {
+                bleStarted = false
+                viewModelScope.launch {
+                    esp32Ble.stop()
+                }
+            }
+            return
+        }
+
+        if (bleStarted) return
+
+        viewModelScope.launch {
+            runCatching {
+                esp32Ble.start()
+            }.onSuccess {
+                bleStarted = true
+            }.onFailure {
+                mutable.value = mutable.value.copy(
+                    message = "No se pudo iniciar Bluetooth: ${it.message}"
+                )
+            }
+        }
+    }
+
+    private fun handleSensorReading(reading: SensorReading) {
+        if (reading.type.name != "ULTRASONIC") return
+
+        val distance = reading.distanceCm ?: return
+
+        val level = when {
+            distance <= 30f -> 2
+            distance <= 100f -> 1
+            else -> 0
+        }
+
+        if (level == 0) {
+            lastProximityLevel = 0
+            lastProximityAnnouncementAt = 0L
+            return
+        }
+
+        val now = System.currentTimeMillis()
+        val changed = level != lastProximityLevel
+        val cooldownElapsed = now - lastProximityAnnouncementAt >= 8_000L
+
+        if (!changed && !cooldownElapsed) return
+
+        lastProximityLevel = level
+        lastProximityAnnouncementAt = now
+
+        when (level) {
+            1 -> speech.announce(
+                "Precaución. Obstáculo adelante, a ${distance.toInt()} centímetros.",
+                SpeechPriority.ENVIRONMENT,
+                0
+            )
+
+            2 -> speech.announce(
+                "¡Peligro! Obstáculo muy cerca, a ${distance.toInt()} centímetros.",
+                SpeechPriority.DANGER,
+                0
+            )
+        }
+    }
     private suspend fun updateModelStatus(models: File) {
         mutable.value = mutable.value.copy(modelStatus = buildString {
             append(if (File(models, "vosk-es").isDirectory) "Vosk listo" else "Vosk instalando")
