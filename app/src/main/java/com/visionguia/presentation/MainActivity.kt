@@ -88,6 +88,18 @@ private fun VisionGuiaScreen(viewModel: MainViewModel = hiltViewModel()) {
     }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissionTick++ }
     val cameraGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    val bluetoothGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.BLUETOOTH_SCAN
+        ) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ) == PackageManager.PERMISSION_GRANTED
+    } else {
+        true
+    }
     val allPermissionsGranted = permissions.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
     VisionGuiaContent(
         state = state,
@@ -102,7 +114,13 @@ private fun VisionGuiaScreen(viewModel: MainViewModel = hiltViewModel()) {
         onDetections = viewModel::onDetections,
         onText = viewModel::onOcrText,
     )
-    LaunchedEffect(permissionTick) { /* recomposition trigger after the system permission sheet closes */ }
+    LaunchedEffect(permissionTick) {
+        // Actualiza el estado después de responder a los permisos de Android.
+    }
+
+    LaunchedEffect(bluetoothGranted) {
+        viewModel.onBluetoothPermissionChanged(bluetoothGranted)
+    }
 }
 
 @Composable

@@ -62,8 +62,32 @@ class Esp32BleSource(
 
     private val gattCallback = object : BluetoothGattCallback() {
         @SuppressLint("MissingPermission")
-        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) gatt.discoverServices()
+        override fun onConnectionStateChange(
+            gatt: BluetoothGatt,
+            status: Int,
+            newState: Int
+        ) {
+            if (status == BluetoothGatt.GATT_SUCCESS &&
+                newState == BluetoothProfile.STATE_CONNECTED
+            ) {
+                val requested = gatt.requestMtu(185)
+
+                if (!requested) {
+                    gatt.discoverServices()
+                }
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                gatt.close()
+                this@Esp32BleSource.gatt = null
+            }
+        }
+
+        @SuppressLint("MissingPermission")
+        override fun onMtuChanged(
+            gatt: BluetoothGatt,
+            mtu: Int,
+            status: Int
+        ) {
+            gatt.discoverServices()
         }
         @SuppressLint("MissingPermission")
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
